@@ -1,6 +1,9 @@
 const userModel = require("../models/user.model");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+const sendEmail = require("../services/email.service");
+const { resetPasswordTemplate, welcomeTemplate } = require("../utils/emailTemplate");
 
 async function signUpController(req, res) {
     const { username, email, password } = req.body;
@@ -41,6 +44,12 @@ async function signUpController(req, res) {
         },
         token
     })
+
+    await sendEmail({
+        to: user.email,
+        subject: "Welcome to Instagram",
+        html: welcomeTemplate(user.username),
+    });
 }
 
 async function signInController(req, res) {
@@ -97,4 +106,40 @@ async function logout(req, res) {
     })
 }
 
-module.exports = { signUpController, signInController, logout }
+async function forgotPasswordController(req, res) {
+    try {
+        const { identifier } = req.body;
+
+        const userExist = await userModel.findOne({ $or: [{ email: identifier }, { username: identifier }] });
+
+        if (!userExist) {
+            return res.status(401).json({
+                sucess: false,
+                message: "Invalid Credentials"
+            })
+        }
+
+        const resetToken = crypto.randomBytes(32).toString("hex");
+
+        const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+
+        await sendEmail({
+            to: userExist.email,
+            subject: "Reset your password",
+            html: resetPasswordTemplate(resetUrl),
+        });
+
+        return res.status(200).json({
+            sucess: true,
+            message: "Reset link sent sucessfully"
+        })
+    } catch (error) {
+        console.log("Internal Server Error");
+        return res.status(500).json({
+            sucess: false,
+            message: "Internal Server Error"
+        })
+    }
+}
+
+module.exports = { signUpController, signInController, logout, forgotPasswordController }
