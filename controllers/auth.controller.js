@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const sendEmail = require("../services/email.service");
 const { resetPasswordTemplate, welcomeTemplate } = require("../utils/emailTemplate");
+const resetPasswordModel = require("../models/resetPasswor.model");
 
 async function signUpController(req, res) {
     const { username, email, password } = req.body;
@@ -119,7 +120,17 @@ async function forgotPasswordController(req, res) {
             })
         }
 
+        await resetPasswordModel.deleteMany({ userId: userExist.id });
+
         const resetToken = crypto.randomBytes(32).toString("hex");
+
+        const hashToken = crypto.createHash("sha256").update(resetToken).digest("hex")
+
+        await resetPasswordModel.create({
+            userId: userExist.id,
+            token: hashToken,
+            expiredAt: Date.now() + 15 * 60 * 1000
+        })
 
         const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
