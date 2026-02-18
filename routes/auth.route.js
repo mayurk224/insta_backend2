@@ -1,9 +1,11 @@
 const express = require("express");
-const { signUpController, signInController, logout, forgotPasswordController, resetPasswordController } = require("../controllers/auth.controller");
+const { signUpController, signInController, logout, forgotPasswordController, resetPasswordController, verifyEmailController } = require("../controllers/auth.controller");
 
 const authRouter = express.Router();
 
 authRouter.post("/sign-up", signUpController)
+
+authRouter.post("/verify-email", verifyEmailController)
 
 authRouter.post("/sign-in", signInController)
 

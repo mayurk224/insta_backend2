@@ -5,6 +5,7 @@ const crypto = require("crypto");
 const sendEmail = require("../services/email.service");
 const { resetPasswordTemplate, welcomeTemplate } = require("../utils/emailTemplate");
 const resetPasswordModel = require("../models/resetPasswor.model");
+const verifyEmailModel = require("../models/verifyEmail.model");
 
 async function signUpController(req, res) {
     const { username, email, password } = req.body;
@@ -26,31 +27,90 @@ async function signUpController(req, res) {
         password: hashPassword
     });
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    const verifyEmailToken = crypto.randomBytes(32).toString("hex");
 
-    res.cookie("token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000
-    });
+    const hashVerifyEmailToken = crypto.createHash("sha256").update(verifyEmailToken).digest("hex");
+
+    await verifyEmailModel.create({
+        userId: user._id,
+        token: hashVerifyEmailToken,
+        expiredAt: Date.now() + 24 * 60 * 60 * 1000
+    })
+
+    const verifyEmailUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verifyEmailToken}`
 
     res.status(201).json({
         sucess: true,
-        message: "User created sucessfully",
+        message: "Account created. Please verify your email.",
         user: {
             _id: user._id,
             username: user.username,
             email: user.email
-        },
-        token
+        }
     })
 
     await sendEmail({
         to: user.email,
         subject: "Welcome to Instagram",
-        html: welcomeTemplate(user.username),
+        html: welcomeTemplate(user.username, verifyEmailUrl),
     });
+}
+
+async function verifyEmailController(req, res) {
+    try {
+        const { token } = req.query;
+
+        if (!token) {
+            return res.status(400).json({
+                sucess: false,
+                message: "Token not found"
+            });
+        };
+
+        const hashToken = crypto.createHash("sha256").update(token).digest("hex");
+
+        const verifyToken = await verifyEmailModel.findOne({
+            token: hashToken,
+            expiredAt: { $gt: Date.now() }
+        })
+
+        if (!verifyToken) {
+            return res.status(400).json({
+                sucess: false,
+                message: "Invalid or expired token"
+            });
+        };
+
+        const user = await userModel.findById(verifyToken.userId);
+
+        if (!user) {
+            return res.status(400).json({
+                sucess: false,
+                message: "user not found"
+            });
+        };
+
+        user.userVerified = true;
+
+        await user.save();
+
+        await verifyEmailModel.deleteOne({
+            _id: verifyToken._id
+        })
+
+        return res.status(200).json({
+            sucess: true,
+            message: "Email verify sucessfully"
+        });
+
+    } catch (error) {
+        console.log(error);
+        
+        return res.status(500).json({
+            sucess: false,
+            message: "Internal Server Error"
+        })
+    }
 }
 
 async function signInController(req, res) {
@@ -210,4 +270,4 @@ async function resetPasswordController(req, res) {
     };
 }
 
-module.exports = { signUpController, signInController, logout, forgotPasswordController, resetPasswordController }
+module.exports = { signUpController, verifyEmailController, signInController, logout, forgotPasswordController, resetPasswordController }
