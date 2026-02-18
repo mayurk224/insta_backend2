@@ -153,4 +153,61 @@ async function forgotPasswordController(req, res) {
     }
 }
 
-module.exports = { signUpController, signInController, logout, forgotPasswordController }
+async function resetPasswordController(req, res) {
+    try {
+        const { token, newPassword } = req.body;
+
+        if (!token || !newPassword) {
+            return res.status(400).json({
+                sucess: false,
+                message: "Token and new password is required"
+            });
+        };
+
+        const hashToken = crypto.createHash("sha256").update(token).digest("hex")
+
+        const validToken = await resetPasswordModel.findOne({
+            token: hashToken,
+            expiredAt: { $gt: Date.now() }
+        });
+
+        if (!validToken) {
+            return res.status(400).json({
+                sucess: false,
+                message: "Invalid or expired token"
+            });
+        };
+
+        const user = await userModel.findById(validToken.userId);
+
+        if (!user) {
+            return res.status(400).json({
+                sucess: false,
+                message: "User not found"
+            });
+        };
+
+        const hashPassowrd = await bcrypt.hash(newPassword, 10);
+
+        user.password = hashPassowrd;
+
+        await user.save();
+
+        await resetPasswordModel.deleteOne({
+            _id: validToken._id
+        });
+
+        return res.status(200).json({
+            sucess: true,
+            message: "Password reset sucessfully"
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            sucess: false,
+            message: "Internal Server error"
+        });
+    };
+}
+
+module.exports = { signUpController, signInController, logout, forgotPasswordController, resetPasswordController }
