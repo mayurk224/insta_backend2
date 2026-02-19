@@ -1,4 +1,5 @@
 const postModel = require("../models/post.model");
+const userModel = require("../models/user.model");
 const uploadToCloud = require("../services/upload.service");
 
 async function createPostController(req, res) {
@@ -23,6 +24,11 @@ async function createPostController(req, res) {
       mediaUrl: mediaDetails.url,
       mediaType: mediaDetails.fileType,
     });
+
+    await userModel.updateOne(
+      { _id: userId },
+      { $inc: { "stats.postCount": 1 } },
+    );
 
     return res.status(200).json({
       success: true,
