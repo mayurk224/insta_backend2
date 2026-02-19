@@ -15,52 +15,79 @@ async function editMyProfileController(req, res) {
     const { username, fullname, bio } = req.body;
     const avatar = req.file;
 
-    const user = await userModel.findById(req.user.userId).select("-password");
+    const update = {};
 
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "user not found",
+    // ✅ Username uniqueness check (exclude self)
+    if (username && username !== req.user.username) {
+      const exists = await userModel.exists({
+        username,
+        _id: { $ne: req.user.userId },
       });
-    }
 
-    if (username && username !== user.username) {
-      const existingUserName = await userModel.findOne({ username });
-
-      if (existingUserName) {
+      if (exists) {
         return res.status(400).json({
           success: false,
           message: "Username already taken",
         });
       }
 
-      user.username = username;
+      update.username = username.trim();
     }
 
-    if (fullname) {
-      user.profile.fullname = fullname;
-    }
+    // ✅ Profile fields
+    if (fullname !== undefined) update["profile.fullname"] = fullname.trim();
 
-    if (bio !== undefined) {
-      user.profile.bio = bio;
-    }
+    if (bio !== undefined) update["profile.bio"] = bio;
 
+    // ✅ Avatar upload with safety
     if (avatar) {
-      const avatarDetails = await uploadToAvatar(avatar);
-
-      user.profile.avatarUrl = avatarDetails.url;
+      try {
+        const { url } = await uploadToAvatar(avatar);
+        update["profile.avatarUrl"] = url;
+      } catch (uploadErr) {
+        console.error("Avatar upload failed:", uploadErr);
+        return res.status(500).json({
+          success: false,
+          message: "Avatar upload failed",
+        });
+      }
     }
 
-    await user.save();
+    // ✅ Nothing to update
+    if (Object.keys(update).length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "Nothing to update",
+      });
+    }
+
+    // ✅ Atomic update with $set
+    const user = await userModel
+      .findByIdAndUpdate(
+        req.user.userId,
+        { $set: update },
+        {
+          returnDocument: "after", // ✅ safer than returnDocument
+          runValidators: true,
+          select: "-password",
+        },
+      )
+      .lean();
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
 
     return res.status(200).json({
       success: true,
-      message: "Profile update successfully",
+      message: "Profile updated successfully",
       user,
     });
-  } catch (error) {
-    console.log(error);
-
+  } catch (err) {
+    console.error(err);
     return res.status(500).json({
       success: false,
       message: "Failed to update profile",
