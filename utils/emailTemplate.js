@@ -9,6 +9,15 @@ const welcomeTemplate = (username, verifyEmailUrl) => {
     `;
 };
 
+const resendVerifyEmailTemplate = (username, verifyEmailUrl) => {
+  return `
+    <h2>Hi ${username}, please verify your email</h2>
+    <p>Click the link below to verify your email address:</p>
+    <a href="${verifyEmailUrl}">Verify Email</a>
+    <p>This link expires in 24 hours.</p>
+  `;
+};
+
 const resetPasswordTemplate = (resetUrl) => {
   return `
     <h2>Password Reset</h2>
@@ -27,6 +36,7 @@ const resetPasswordSucessTemplate = () => {
 
 module.exports = {
   welcomeTemplate,
+  resendVerifyEmailTemplate,
   resetPasswordTemplate,
   resetPasswordSucessTemplate,
 };

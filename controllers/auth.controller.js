@@ -7,8 +7,9 @@ const {
   resetPasswordTemplate,
   welcomeTemplate,
   resetPasswordSucessTemplate,
+  resendVerifyEmailTemplate,
 } = require("../utils/emailTemplate");
-const resetPasswordModel = require("../models/resetPasswor.model");
+const resetPasswordModel = require("../models/resetPassword.model");
 const verifyEmailModel = require("../models/verifyEmail.model");
 
 async function signUpController(req, res) {
@@ -64,6 +65,74 @@ async function signUpController(req, res) {
     subject: "Welcome to Instagram",
     html: welcomeTemplate(user.username, verifyEmailUrl),
   });
+}
+
+async function resendVerifyEmailController(req, res) {
+  try {
+    const { identifier } = req.body;
+
+    if (!identifier) {
+      return res.status(400).json({
+        sucess: false,
+        message: "Email or username is required",
+      });
+    }
+
+    const userExist = await userModel.findOne({
+      $or: [{ email: identifier }, { username: identifier }],
+    });
+
+    if (!userExist) {
+      return res.status(400).json({
+        sucess: false,
+        message: "User not found",
+      });
+    }
+
+    if (userExist.userVerified) {
+      return res.status(400).json({
+        sucess: false,
+        message: "User is already verified",
+      });
+    }
+
+    await verifyEmailModel.deleteMany({
+      userId: userExist._id,
+    });
+
+    const verifyEmailToken = crypto.randomBytes(32).toString("hex");
+
+    const hashVerifyEmailToken = crypto
+      .createHash("sha256")
+      .update(verifyEmailToken)
+      .digest("hex");
+
+    await verifyEmailModel.create({
+      userId: userExist._id,
+      token: hashVerifyEmailToken,
+      expiredAt: Date.now() + 24 * 60 * 60 * 1000,
+    });
+
+    const verifyEmailUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verifyEmailToken}`;
+
+    res.status(200).json({
+      sucess: true,
+      message: "Email sent. Please check your inbox",
+    });
+
+    await sendEmail({
+      to: userExist.email,
+      subject: "New Verification Email",
+      html: resendVerifyEmailTemplate(userExist.username, verifyEmailUrl),
+    });
+  } catch (error) {
+    console.log(error);
+
+    return res.status(500).json({
+      sucess: false,
+      message: "Internal server error",
+    });
+  }
 }
 
 async function verifyEmailController(req, res) {
@@ -312,6 +381,7 @@ async function resetPasswordController(req, res) {
 
 module.exports = {
   signUpController,
+  resendVerifyEmailController,
   verifyEmailController,
   signInController,
   logout,
