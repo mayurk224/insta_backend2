@@ -7,7 +7,7 @@ const welcomeTemplate = (username, verifyEmailUrl) => {
     <p>${verifyEmailUrl}</p>
     <p>This link expires in 24 hours.</p>
     `;
-}
+};
 
 const resetPasswordTemplate = (resetUrl) => {
   return `
@@ -18,4 +18,15 @@ const resetPasswordTemplate = (resetUrl) => {
   `;
 };
 
-module.exports = { welcomeTemplate, resetPasswordTemplate }
+const resetPasswordSucessTemplate = () => {
+  return `
+    <h2>Password Reset Successful</h2>
+    <p>Your password has been successfully reset. You can now log in with your new password.</p>
+  `;
+};
+
+module.exports = {
+  welcomeTemplate,
+  resetPasswordTemplate,
+  resetPasswordSucessTemplate,
+};

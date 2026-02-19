@@ -3,271 +3,318 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const sendEmail = require("../services/email.service");
-const { resetPasswordTemplate, welcomeTemplate } = require("../utils/emailTemplate");
+const {
+  resetPasswordTemplate,
+  welcomeTemplate,
+  resetPasswordSucessTemplate,
+} = require("../utils/emailTemplate");
 const resetPasswordModel = require("../models/resetPasswor.model");
 const verifyEmailModel = require("../models/verifyEmail.model");
 
 async function signUpController(req, res) {
-    const { username, email, password } = req.body;
+  const { username, email, password } = req.body;
 
-    isUserExist = await userModel.findOne({ $or: [{ email }, { username }] });
+  isUserExist = await userModel.findOne({ $or: [{ email }, { username }] });
 
-    if (isUserExist) {
-        return res.status(409).json({
-            sucess: false,
-            message: (isUserExist.email === email ? "Email already exist" : "Username already exist")
-        });
-    }
-
-    const hashPassword = await bcrypt.hash(password, 10);
-
-    const user = await userModel.create({
-        username,
-        email,
-        password: hashPassword
+  if (isUserExist) {
+    return res.status(409).json({
+      sucess: false,
+      message:
+        isUserExist.email === email
+          ? "Email already exist"
+          : "Username already exist",
     });
+  }
 
-    const verifyEmailToken = crypto.randomBytes(32).toString("hex");
+  const hashPassword = await bcrypt.hash(password, 10);
 
-    const hashVerifyEmailToken = crypto.createHash("sha256").update(verifyEmailToken).digest("hex");
+  const user = await userModel.create({
+    username,
+    email,
+    password: hashPassword,
+  });
 
-    await verifyEmailModel.create({
-        userId: user._id,
-        token: hashVerifyEmailToken,
-        expiredAt: Date.now() + 24 * 60 * 60 * 1000
-    })
+  const verifyEmailToken = crypto.randomBytes(32).toString("hex");
 
-    const verifyEmailUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verifyEmailToken}`
+  const hashVerifyEmailToken = crypto
+    .createHash("sha256")
+    .update(verifyEmailToken)
+    .digest("hex");
 
-    res.status(201).json({
-        sucess: true,
-        message: "Account created. Please verify your email.",
-        user: {
-            _id: user._id,
-            username: user.username,
-            email: user.email
-        }
-    })
+  await verifyEmailModel.create({
+    userId: user._id,
+    token: hashVerifyEmailToken,
+    expiredAt: Date.now() + 24 * 60 * 60 * 1000,
+  });
 
-    await sendEmail({
-        to: user.email,
-        subject: "Welcome to Instagram",
-        html: welcomeTemplate(user.username, verifyEmailUrl),
-    });
+  const verifyEmailUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verifyEmailToken}`;
+
+  res.status(201).json({
+    sucess: true,
+    message: "Account created. Please verify your email.",
+    user: {
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+    },
+  });
+
+  await sendEmail({
+    to: user.email,
+    subject: "Welcome to Instagram",
+    html: welcomeTemplate(user.username, verifyEmailUrl),
+  });
 }
 
 async function verifyEmailController(req, res) {
-    try {
-        const { token } = req.query;
+  try {
+    const { token } = req.query;
 
-        if (!token) {
-            return res.status(400).json({
-                sucess: false,
-                message: "Token not found"
-            });
-        };
-
-        const hashToken = crypto.createHash("sha256").update(token).digest("hex");
-
-        const verifyToken = await verifyEmailModel.findOne({
-            token: hashToken,
-            expiredAt: { $gt: Date.now() }
-        })
-
-        if (!verifyToken) {
-            return res.status(400).json({
-                sucess: false,
-                message: "Invalid or expired token"
-            });
-        };
-
-        const user = await userModel.findById(verifyToken.userId);
-
-        if (!user) {
-            return res.status(400).json({
-                sucess: false,
-                message: "user not found"
-            });
-        };
-
-        user.userVerified = true;
-
-        await user.save();
-
-        await verifyEmailModel.deleteOne({
-            _id: verifyToken._id
-        })
-
-        return res.status(200).json({
-            sucess: true,
-            message: "Email verify sucessfully"
-        });
-
-    } catch (error) {
-        console.log(error);
-        
-        return res.status(500).json({
-            sucess: false,
-            message: "Internal Server Error"
-        })
+    if (!token) {
+      return res.status(400).json({
+        sucess: false,
+        message: "Token not found",
+      });
     }
+
+    const hashToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const verifyToken = await verifyEmailModel.findOne({
+      token: hashToken,
+      expiredAt: { $gt: Date.now() },
+    });
+
+    if (!verifyToken) {
+      return res.status(400).json({
+        sucess: false,
+        message: "Invalid or expired token",
+      });
+    }
+
+    const user = await userModel.findById(verifyToken.userId);
+
+    if (!user) {
+      return res.status(400).json({
+        sucess: false,
+        message: "user not found",
+      });
+    }
+
+    user.userVerified = true;
+
+    await user.save();
+
+    await verifyEmailModel.deleteOne({
+      _id: verifyToken._id,
+    });
+
+    return res.status(200).json({
+      sucess: true,
+      message: "Email verify sucessfully",
+    });
+  } catch (error) {
+    console.log(error);
+
+    return res.status(500).json({
+      sucess: false,
+      message: "Internal Server Error",
+    });
+  }
 }
 
 async function signInController(req, res) {
-    const { identifier, password } = req.body;
+  const { identifier, password } = req.body;
 
-    const userExist = await userModel.findOne({ $or: [{ email: identifier }, { username: identifier }] });
+  const userExist = await userModel.findOne({
+    $or: [{ email: identifier }, { username: identifier }],
+  });
 
-    if (!userExist) {
-        return res.status(401).json({
-            sucess: false,
-            message: "Invalid Credentials"
-        })
-    }
-
-    const checkPassword = bcrypt.compare(password, userExist.password);
-
-    if (!checkPassword) {
-        return res.status(401).json({
-            sucess: false,
-            message: "Invalid Credentials"
-        })
-    }
-
-    const token = jwt.sign({ userId: userExist._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
-
-    res.cookie("token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000
+  if (!userExist) {
+    return res.status(401).json({
+      sucess: false,
+      message: "Invalid Credentials",
     });
+  }
 
-    res.status(201).json({
-        sucess: true,
-        message: "Sign in sucessfully",
-        user: {
-            _id: userExist._id,
-            username: userExist.username,
-            email: userExist.email,
-        }
-    })
+  if (!userExist.userVerified) {
+    return res.status(403).json({
+      sucess: false,
+      message: "Please verify your email",
+    });
+  }
+
+  const checkPassword = bcrypt.compare(password, userExist.password);
+
+  if (!checkPassword) {
+    return res.status(401).json({
+      sucess: false,
+      message: "Invalid Credentials",
+    });
+  }
+
+  const token = jwt.sign({ userId: userExist._id }, process.env.JWT_SECRET, {
+    expiresIn: "7d",
+  });
+
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+
+  res.status(201).json({
+    sucess: true,
+    message: "Sign in sucessfully",
+    user: {
+      _id: userExist._id,
+      username: userExist.username,
+      email: userExist.email,
+    },
+  });
 }
 
 async function logout(req, res) {
-    res.clearCookie("token", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-    })
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
 
-    return res.status(200).json({
-        sucess: true,
-        message: "Logged out Sucessfully"
-    })
+  return res.status(200).json({
+    sucess: true,
+    message: "Logged out Sucessfully",
+  });
 }
 
 async function forgotPasswordController(req, res) {
-    try {
-        const { identifier } = req.body;
+  try {
+    const { identifier } = req.body;
 
-        const userExist = await userModel.findOne({ $or: [{ email: identifier }, { username: identifier }] });
+    const userExist = await userModel.findOne({
+      $or: [{ email: identifier }, { username: identifier }],
+    });
 
-        if (!userExist) {
-            return res.status(401).json({
-                sucess: false,
-                message: "Invalid Credentials"
-            })
-        }
-
-        await resetPasswordModel.deleteMany({ userId: userExist.id });
-
-        const resetToken = crypto.randomBytes(32).toString("hex");
-
-        const hashToken = crypto.createHash("sha256").update(resetToken).digest("hex")
-
-        await resetPasswordModel.create({
-            userId: userExist.id,
-            token: hashToken,
-            expiredAt: Date.now() + 15 * 60 * 1000
-        })
-
-        const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
-
-        await sendEmail({
-            to: userExist.email,
-            subject: "Reset your password",
-            html: resetPasswordTemplate(resetUrl),
-        });
-
-        return res.status(200).json({
-            sucess: true,
-            message: "Reset link sent sucessfully"
-        })
-    } catch (error) {
-        console.log("Internal Server Error");
-        return res.status(500).json({
-            sucess: false,
-            message: "Internal Server Error"
-        })
+    if (!userExist) {
+      return res.status(401).json({
+        sucess: false,
+        message: "Invalid Credentials",
+      });
     }
+
+    await resetPasswordModel.deleteMany({ userId: userExist.id });
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+
+    const hashToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+
+    await resetPasswordModel.create({
+      userId: userExist.id,
+      token: hashToken,
+      expiredAt: Date.now() + 15 * 60 * 1000,
+    });
+
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+
+    await sendEmail({
+      to: userExist.email,
+      subject: "Reset your password",
+      html: resetPasswordTemplate(resetUrl),
+    });
+
+    return res.status(200).json({
+      sucess: true,
+      message: "Reset link sent sucessfully",
+    });
+  } catch (error) {
+    console.log("Internal Server Error");
+    return res.status(500).json({
+      sucess: false,
+      message: "Internal Server Error",
+    });
+  }
 }
 
 async function resetPasswordController(req, res) {
-    try {
-        const { token, newPassword } = req.body;
+  try {
+    const { token, newPassword } = req.body;
 
-        if (!token || !newPassword) {
-            return res.status(400).json({
-                sucess: false,
-                message: "Token and new password is required"
-            });
-        };
+    if (!token || !newPassword) {
+      return res.status(400).json({
+        sucess: false,
+        message: "Token and new password is required",
+      });
+    }
 
-        const hashToken = crypto.createHash("sha256").update(token).digest("hex")
+    const hashToken = crypto.createHash("sha256").update(token).digest("hex");
 
-        const validToken = await resetPasswordModel.findOne({
-            token: hashToken,
-            expiredAt: { $gt: Date.now() }
-        });
+    const validToken = await resetPasswordModel.findOne({
+      token: hashToken,
+      expiredAt: { $gt: Date.now() },
+    });
 
-        if (!validToken) {
-            return res.status(400).json({
-                sucess: false,
-                message: "Invalid or expired token"
-            });
-        };
+    if (!validToken) {
+      return res.status(400).json({
+        sucess: false,
+        message: "Invalid or expired token",
+      });
+    }
 
-        const user = await userModel.findById(validToken.userId);
+    const user = await userModel.findById(validToken.userId);
 
-        if (!user) {
-            return res.status(400).json({
-                sucess: false,
-                message: "User not found"
-            });
-        };
+    if (!user) {
+      return res.status(400).json({
+        sucess: false,
+        message: "User not found",
+      });
+    }
 
-        const hashPassowrd = await bcrypt.hash(newPassword, 10);
+    const isSamePassword = await bcrypt.compare(newPassword, user.password);
 
-        user.password = hashPassowrd;
+    if (isSamePassword) {
+      return res.status(400).json({
+        sucess: false,
+        message: "New password cannot be same as old password",
+      });
+    }
 
-        await user.save();
+    const hashPassowrd = await bcrypt.hash(newPassword, 10);
 
-        await resetPasswordModel.deleteOne({
-            _id: validToken._id
-        });
+    user.password = hashPassowrd;
 
-        return res.status(200).json({
-            sucess: true,
-            message: "Password reset sucessfully"
-        });
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({
-            sucess: false,
-            message: "Internal Server error"
-        });
-    };
+    await user.save();
+
+    await resetPasswordModel.deleteOne({
+      _id: validToken._id,
+    });
+
+    await sendEmail({
+      to: user.email,
+      subject: "Password Reset Successful",
+      html: resetPasswordSucessTemplate(),
+    });
+
+    return res.status(200).json({
+      sucess: true,
+      message: "Password reset sucessfully",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      sucess: false,
+      message: "Internal Server error",
+    });
+  }
 }
 
-module.exports = { signUpController, verifyEmailController, signInController, logout, forgotPasswordController, resetPasswordController }
+module.exports = {
+  signUpController,
+  verifyEmailController,
+  signInController,
+  logout,
+  forgotPasswordController,
+  resetPasswordController,
+};
