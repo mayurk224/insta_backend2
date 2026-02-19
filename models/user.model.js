@@ -19,12 +19,15 @@ const userSchema = new mongoose.Schema(
     profile: {
       fullname: {
         type: String,
+        maxlength: [50, "max length should be 50"],
       },
       bio: {
         type: String,
+        maxlength: [150, "max legth should be 150"],
       },
       avatarUrl: {
         type: String,
+        default: "https://ik.imagekit.io/m0no8ccps/pngwing.com.png",
       },
     },
     stats: {

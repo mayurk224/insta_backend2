@@ -1,6 +1,6 @@
 const postModel = require("../models/post.model");
 const userModel = require("../models/user.model");
-const uploadToCloud = require("../services/upload.service");
+const { uploadToCloud } = require("../services/upload.service");
 
 async function createPostController(req, res) {
   try {
