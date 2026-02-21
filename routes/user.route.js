@@ -4,6 +4,7 @@ const {
   getMyProfileController,
   editMyProfile,
   editMyProfileController,
+  changeAccountTypeController,
 } = require("../controllers/user.controller");
 const upload = require("../middlewares/upload.middleware");
 
@@ -17,5 +18,7 @@ userRouter.post(
   upload.single("avatar"),
   editMyProfileController,
 );
+
+userRouter.patch("/account-privacy", identifyUser, changeAccountTypeController);
 
 module.exports = userRouter;

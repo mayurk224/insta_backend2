@@ -95,4 +95,21 @@ async function editMyProfileController(req, res) {
   }
 }
 
-module.exports = { getMyProfileController, editMyProfileController };
+async function changeAccountTypeController(req, res) {
+  const user = await userModel.findById(req.user.userId);
+
+  user.accountType.isPrivate = !user.accountType.isPrivate;
+
+  user.save();
+
+  return res.status(200).json({
+    success: true,
+    message: `Account Type changed to : ${user.accountType.isPrivate ? "private" : "public"}`,
+  });
+}
+
+module.exports = {
+  getMyProfileController,
+  editMyProfileController,
+  changeAccountTypeController,
+};
