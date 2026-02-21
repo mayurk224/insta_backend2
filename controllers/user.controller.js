@@ -1,5 +1,6 @@
 const userModel = require("../models/user.model");
 const { uploadToAvatar } = require("../services/upload.service");
+const bcrypt = require("bcryptjs");
 
 async function getMyProfileController(req, res) {
   const user = await userModel.findById(req.user.userId).select("-password");
@@ -108,8 +109,66 @@ async function changeAccountTypeController(req, res) {
   });
 }
 
+async function changePasswordController(req, res) {
+  try {
+    const { oldPassword, newPassword } = req.body;
+
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Both old and new passwords are required",
+      });
+    }
+
+    const user = await userModel.findById(req.user.userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: "Old password is incorrect",
+      });
+    }
+
+    const isSame = await bcrypt.compare(newPassword, user.password);
+
+    if (isSame) {
+      return res.status(400).json({
+        success: false,
+        message: "New password cannot be the same as the old one",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    user.password = hashedPassword;
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+}
+
 module.exports = {
   getMyProfileController,
   editMyProfileController,
   changeAccountTypeController,
+  changePasswordController,
 };
