@@ -314,6 +314,69 @@ async function acceptRequestController(req, res) {
   }
 }
 
+async function unfollowUserController(req, res) {
+  try {
+    const { username } = req.params;
+
+    const { userId } = req.user;
+
+    const targetUser = await userModel
+      .findOne({ username })
+      .select("_id")
+      .lean();
+
+    if (!targetUser) {
+      return res.status(404).json({
+        success: false,
+        message: "user not found",
+      });
+    }
+
+    if (targetUser._id.toString() === userId.toString()) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot unfollow yourself",
+      });
+    }
+
+    const unfollow = await followModel.findOneAndDelete({
+      followerId: userId,
+      followingId: targetUser._id,
+      status: "accepted",
+    });
+
+    if (!unfollow) {
+      return res.status(404).json({
+        success: false,
+        message: "You are not following this user",
+      });
+    }
+
+    await Promise.all([
+      userModel.updateOne(
+        { _id: userId },
+        { $inc: { "stats.followingCount": -1 } },
+      ),
+      userModel.updateOne(
+        { _id: targetUser._id },
+        { $inc: { "stats.followerCount": -1 } },
+      ),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      message: `You have unfollowed @${username}`,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server errro",
+    });
+  }
+}
+
 module.exports = {
   getMyProfileController,
   editMyProfileController,
@@ -321,4 +384,5 @@ module.exports = {
   changePasswordController,
   followUserController,
   acceptRequestController,
+  unfollowUserController,
 };

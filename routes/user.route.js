@@ -8,6 +8,7 @@ const {
   changePasswordController,
   followUserController,
   acceptRequestController,
+  unfollowUserController,
 } = require("../controllers/user.controller");
 const upload = require("../middlewares/upload.middleware");
 
@@ -33,5 +34,7 @@ userRouter.patch(
   identifyUser,
   acceptRequestController,
 );
+
+userRouter.patch("/:username/unfollow", identifyUser, unfollowUserController);
 
 module.exports = userRouter;
