@@ -1,3 +1,4 @@
+const followModel = require("../models/follow.model");
 const userModel = require("../models/user.model");
 const { uploadToAvatar } = require("../services/upload.service");
 const bcrypt = require("bcryptjs");
@@ -166,9 +167,84 @@ async function changePasswordController(req, res) {
   }
 }
 
+async function followUserController(req, res) {
+  try {
+    const { username } = req.params;
+    const { userId } = req.user;
+
+    const targetUser = await userModel
+      .findOne({ username })
+      .select("_id accountType.isPrivate")
+      .lean();
+
+    if (!targetUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (targetUser._id.equals(userId)) {
+      return res.status(403).json({
+        success: false,
+        message: "You cannot follow yourself",
+      });
+    }
+
+    const existing = await followModel.exists({
+      followingId: targetUser._id,
+      followerId: userId,
+    });
+
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        message: "Already following this user",
+      });
+    }
+
+    const status = targetUser.accountType.isPrivate ? "pending" : "accepted";
+
+    await followModel.create({
+      followingId: targetUser._id,
+      followerId: userId,
+      status,
+    });
+
+    if (status === "pending") {
+      return res.status(200).json({
+        success: true,
+        message: `follow request sent to ${username}`,
+      });
+    }
+
+    await userModel.updateOne(
+      { _id: userId },
+      { $inc: { "stats.followingCount": 1 } },
+    );
+
+    await userModel.updateOne(
+      { _id: targetUser._id },
+      { $inc: { "stats.followerCount": 1 } },
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: `You are now following @${username}`,
+    });
+  } catch (err) {
+    console.error("followUserController:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
+
 module.exports = {
   getMyProfileController,
   editMyProfileController,
   changeAccountTypeController,
   changePasswordController,
+  followUserController,
 };
