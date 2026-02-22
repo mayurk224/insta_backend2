@@ -206,11 +206,9 @@ async function followUserController(req, res) {
       });
     }
 
-    const status = targetUser.accountType.isPrivate
-      ? "pending"
-      : "accepted";
+    const status = targetUser.accountType.isPrivate ? "pending" : "accepted";
 
-    await followModel.create({
+    const followRequest = await followModel.create({
       followerId: userId,
       followingId: targetUser._id,
       status,
@@ -220,11 +218,11 @@ async function followUserController(req, res) {
       await Promise.all([
         userModel.updateOne(
           { _id: userId },
-          { $inc: { "stats.followingCount": 1 } }
+          { $inc: { "stats.followingCount": 1 } },
         ),
         userModel.updateOne(
           { _id: targetUser._id },
-          { $inc: { "stats.followerCount": 1 } }
+          { $inc: { "stats.followerCount": 1 } },
         ),
       ]);
     }
@@ -233,10 +231,9 @@ async function followUserController(req, res) {
       success: true,
       message:
         status === "pending"
-          ? `Follow request sent to @${username}.`
+          ? `Follow request sent to @${username} requestId: ${followRequest._id}.`
           : `You are now following @${username}.`,
     });
-
   } catch (err) {
     console.error("followUserController:", err);
 
@@ -254,10 +251,74 @@ async function followUserController(req, res) {
   }
 }
 
+async function acceptRequestController(req, res) {
+  try {
+    const { requestId } = req.params;
+    const { action } = req.body;
+    const currentUserId = req.user.userId;
+
+    if (!["accept", "reject"].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid action",
+      });
+    }
+
+    const followRequest = await followModel.findOne({
+      _id: requestId,
+      followingId: currentUserId,
+      status: "pending",
+    });
+
+    if (!followRequest) {
+      return res.status(404).json({
+        success: false,
+        message: "Follow request not found",
+      });
+    }
+
+    if (action === "reject") {
+      await followModel.deleteOne({ _id: requestId });
+
+      return res.status(200).json({
+        success: true,
+        message: "Follow request rejected",
+      });
+    }
+
+    followRequest.status = "accepted";
+
+    await followRequest.save();
+
+    await Promise.all([
+      userModel.updateOne(
+        { _id: currentUserId },
+        { $inc: { "stats.followerCount": 1 } },
+      ),
+      userModel.updateOne(
+        { _id: followRequest.followerId },
+        { $inc: { "stats.followingCount": 1 } },
+      ),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      message: "Follow request accepted",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to process request",
+    });
+  }
+}
+
 module.exports = {
   getMyProfileController,
   editMyProfileController,
   changeAccountTypeController,
   changePasswordController,
   followUserController,
+  acceptRequestController,
 };
