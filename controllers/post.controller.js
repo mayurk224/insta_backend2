@@ -1,3 +1,4 @@
+const followModel = require("../models/follow.model");
 const postModel = require("../models/post.model");
 const userModel = require("../models/user.model");
 const { uploadToCloud } = require("../services/upload.service");
@@ -80,7 +81,60 @@ async function getMyPostsController(req, res) {
   }
 }
 
+async function getPostController(req, res) {
+  try {
+    const { postId } = req.params;
+    const { userId } = req.user;
+
+    const post = await postModel
+      .findById(postId)
+      .populate("userId", "_id, username accountType.isPrivate")
+      .lean();
+
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    const postOwner = post.userId;
+
+    if (postOwner.accountType.isPrivate) {
+      const isOwner = userId && postOwner._id.toString() === userId.toString();
+
+      if (!isOwner) {
+        const isFollower = await followModel.exists({
+          followerId: userId,
+          followingId: postOwner._id,
+          status: "accepted",
+        });
+
+        if (!isFollower) {
+          return res.status(403).json({
+            success: false,
+            message: "this account is private",
+          });
+        }
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      post,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
+
 module.exports = {
   createPostController,
-  getMyPostsController
+  getMyPostsController,
+  getPostController,
 };
