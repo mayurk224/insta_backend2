@@ -377,6 +377,43 @@ async function unfollowUserController(req, res) {
   }
 }
 
+async function myFollowerController(req, res) {
+  try {
+    const { userId } = req.user;
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const skip = (page - 1) * limit;
+
+    const followers = await followModel
+      .find({
+        followingId: userId,
+        status: "accepted",
+      })
+      .populate("followerId", "username profile.avatarUrl stats.followerCount")
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    const followerList = followers.map((f) => f.followerId);
+
+    return res.status(200).json({
+      success: true,
+      page,
+      count: followerList.length,
+      followers: followerList,
+    });
+  } catch (error) {
+    console.error("getMyFollowersController:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch followers",
+    });
+  }
+}
+
 module.exports = {
   getMyProfileController,
   editMyProfileController,
@@ -385,4 +422,5 @@ module.exports = {
   followUserController,
   acceptRequestController,
   unfollowUserController,
+  myFollowerController,
 };
