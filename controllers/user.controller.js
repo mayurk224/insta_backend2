@@ -174,7 +174,7 @@ async function followUserController(req, res) {
 
     const targetUser = await userModel
       .findOne({ username })
-      .select("_id accountType.isPrivate")
+      .select("_id accountType.isPrivate stats.followerCount")
       .lean();
 
     if (!targetUser) {
@@ -184,56 +184,69 @@ async function followUserController(req, res) {
       });
     }
 
-    if (targetUser._id.equals(userId)) {
-      return res.status(403).json({
+    if (targetUser._id.toString() === userId.toString()) {
+      return res.status(400).json({
         success: false,
         message: "You cannot follow yourself",
       });
     }
 
-    const existing = await followModel.exists({
-      followingId: targetUser._id,
+    const existingFollow = await followModel.findOne({
       followerId: userId,
+      followingId: targetUser._id,
     });
 
-    if (existing) {
+    if (existingFollow) {
       return res.status(409).json({
         success: false,
-        message: "Already following this user",
+        message:
+          existingFollow.status === "pending"
+            ? `Follow request already sent to @${username}.`
+            : `You are already following @${username}.`,
       });
     }
 
-    const status = targetUser.accountType.isPrivate ? "pending" : "accepted";
+    const status = targetUser.accountType.isPrivate
+      ? "pending"
+      : "accepted";
 
     await followModel.create({
-      followingId: targetUser._id,
       followerId: userId,
+      followingId: targetUser._id,
       status,
     });
 
-    if (status === "pending") {
-      return res.status(200).json({
-        success: true,
-        message: `follow request sent to ${username}`,
+    if (status === "accepted") {
+      await Promise.all([
+        userModel.updateOne(
+          { _id: userId },
+          { $inc: { "stats.followingCount": 1 } }
+        ),
+        userModel.updateOne(
+          { _id: targetUser._id },
+          { $inc: { "stats.followerCount": 1 } }
+        ),
+      ]);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message:
+        status === "pending"
+          ? `Follow request sent to @${username}.`
+          : `You are now following @${username}.`,
+    });
+
+  } catch (err) {
+    console.error("followUserController:", err);
+
+    if (err.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "Already following or request exists.",
       });
     }
 
-    await userModel.updateOne(
-      { _id: userId },
-      { $inc: { "stats.followingCount": 1 } },
-    );
-
-    await userModel.updateOne(
-      { _id: targetUser._id },
-      { $inc: { "stats.followerCount": 1 } },
-    );
-
-    return res.status(201).json({
-      success: true,
-      message: `You are now following @${username}`,
-    });
-  } catch (err) {
-    console.error("followUserController:", err);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
