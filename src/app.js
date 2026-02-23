@@ -25,7 +25,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
