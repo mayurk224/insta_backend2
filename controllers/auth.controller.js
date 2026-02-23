@@ -15,7 +15,23 @@ const verifyEmailModel = require("../models/verifyEmail.model");
 async function signUpController(req, res) {
   const { username, email, password } = req.body;
 
-  isUserExist = await userModel.findOne({ $or: [{ email }, { username }] });
+  if (
+    !username ||
+    typeof username !== "string" ||
+    !email ||
+    typeof email !== "string" ||
+    !password ||
+    typeof password !== "string"
+  ) {
+    return res.status(400).json({
+      sucess: false,
+      message: "username, email and password are required",
+    });
+  }
+
+  const isUserExist = await userModel.findOne({
+    $or: [{ email }, { username }],
+  });
 
   if (isUserExist) {
     return res.status(409).json({
@@ -194,6 +210,18 @@ async function verifyEmailController(req, res) {
 async function signInController(req, res) {
   const { identifier, password } = req.body;
 
+  if (
+    !identifier ||
+    typeof identifier !== "string" ||
+    !password ||
+    typeof password !== "string"
+  ) {
+    return res.status(400).json({
+      sucess: false,
+      message: "identifier and password are required",
+    });
+  }
+
   const userExist = await userModel.findOne({
     $or: [{ email: identifier }, { username: identifier }],
   });
@@ -212,7 +240,7 @@ async function signInController(req, res) {
     });
   }
 
-  const checkPassword = bcrypt.compare(password, userExist.password);
+  const checkPassword = await bcrypt.compare(password, userExist.password);
 
   if (!checkPassword) {
     return res.status(401).json({
