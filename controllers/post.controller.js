@@ -5,6 +5,7 @@ const userModel = require("../models/user.model");
 const { uploadToCloud } = require("../services/upload.service");
 const deleteImageKitFiles = require("../services/deleteMedia.service");
 const likeModel = require("../models/like.model");
+const commentModel = require("../models/comment.model");
 
 async function createPostController(req, res) {
   try {
@@ -394,6 +395,103 @@ async function likePostController(req, res) {
   }
 }
 
+async function commentPostController(req, res) {
+  try {
+    const { postId } = req.params;
+    const { userId } = req.user;
+    const { comment } = req.body;
+
+    const post = await postModel
+      .findById(postId)
+      .populate("userId", "_id accountType.isPrivate")
+      .lean();
+
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    if (!comment || typeof comment !== "string" || !comment.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "comment is required",
+      });
+    }
+
+    const postOwner = post.userId;
+
+    if (postOwner && postOwner.accountType && postOwner.accountType.isPrivate) {
+      const isOwner = postOwner._id.toString() === userId.toString();
+
+      if (!isOwner) {
+        const isFollower = await followModel.exists({
+          followerId: userId,
+          followingId: postOwner._id,
+          status: "accepted",
+        });
+
+        if (!isFollower) {
+          return res.status(403).json({
+            success: false,
+            message: "this account is private",
+          });
+        }
+      }
+    }
+
+    const trimmedComment = comment.trim();
+
+    try {
+      const newComment = await commentModel.create({
+        userId,
+        postId,
+        comment: trimmedComment,
+      });
+
+      await postModel.updateOne(
+        { _id: postId },
+        {
+          $inc: { commentsCount: 1 },
+        },
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "comment added",
+        comment: newComment,
+      });
+    } catch (error) {
+      if (error.code === 11000) {
+        await commentModel.updateOne(
+          {
+            userId,
+            postId,
+          },
+          {
+            $set: { comment: trimmedComment },
+          },
+        );
+
+        return res.status(200).json({
+          success: true,
+          message: "comment updated",
+        });
+      }
+
+      throw error;
+    }
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to add comment on this post",
+    });
+  }
+}
+
 module.exports = {
   createPostController,
   getMyPostsController,
@@ -401,4 +499,5 @@ module.exports = {
   editPostController,
   deletePostController,
   likePostController,
+  commentPostController,
 };
