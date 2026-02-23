@@ -1,7 +1,9 @@
+const mongoose = require("mongoose");
 const followModel = require("../models/follow.model");
 const postModel = require("../models/post.model");
 const userModel = require("../models/user.model");
 const { uploadToCloud } = require("../services/upload.service");
+const deleteImageKitFiles = require("../services/deleteMedia.service");
 
 async function createPostController(req, res) {
   try {
@@ -24,6 +26,7 @@ async function createPostController(req, res) {
       caption,
       mediaUrl: mediaDetails.url,
       mediaType: mediaDetails.fileType,
+      mediaFileId: mediaDetails.fileId,
     });
 
     await userModel.updateOne(
@@ -173,6 +176,7 @@ async function editPostController(req, res) {
 
         update.mediaUrl = mediaDetails.url;
         update.mediaType = mediaDetails.fileType;
+        update.mediaFileId = mediaDetails.fileId;
       } catch (uploadError) {
         console.error(uploadError);
 
@@ -232,9 +236,79 @@ async function editPostController(req, res) {
   }
 }
 
+async function deletePostController(req, res) {
+  const { postId } = req.params;
+  const { userId } = req.user || {};
+
+  if (!userId) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized",
+    });
+  }
+
+  const session = await mongoose.startSession();
+
+  try {
+    await session.withTransaction(async () => {
+      const post = await postModel.findById(postId).session(session);
+
+      if (!post) {
+        const error = new Error("Post not found");
+        error.status = 404;
+        throw error;
+      }
+
+      if (post.userId.toString() !== userId.toString()) {
+        const error = new Error("You are not allowed to delete this post");
+        error.status = 403;
+        throw error;
+      }
+
+      await postModel.deleteOne({ _id: postId }, { session });
+
+      if (post.mediaFileId) {
+        await deleteImageKitFiles([post.mediaFileId]);
+      }
+
+      await userModel.updateOne(
+        { _id: userId },
+        { $inc: { "stats.postCount": -1 } },
+        { session },
+      );
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Post deleted successfully",
+    });
+  } catch (error) {
+    console.error(error);
+
+    const statusCode = error && error.status ? error.status : 500;
+    let message = "Failed to delete post";
+
+    if (statusCode === 404) {
+      message = "Post not found";
+    } else if (statusCode === 403) {
+      message = "You are not allowed to delete this post";
+    } else if (statusCode === 401) {
+      message = "Unauthorized";
+    }
+
+    return res.status(statusCode).json({
+      success: false,
+      message,
+    });
+  } finally {
+    session.endSession();
+  }
+}
+
 module.exports = {
   createPostController,
   getMyPostsController,
   getPostController,
   editPostController,
+  deletePostController,
 };

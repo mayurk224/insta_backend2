@@ -4,6 +4,7 @@ const {
   getMyPostsController,
   getPostController,
   editPostController,
+  deletePostController,
 } = require("../controllers/post.controller");
 const { identifyUser } = require("../middlewares/auth.middleware");
 const upload = require("../middlewares/upload.middleware");
@@ -27,5 +28,7 @@ postRouter.patch(
   upload.single("media"),
   editPostController,
 );
+
+postRouter.delete("/:postId", identifyUser, deletePostController);
 
 module.exports = postRouter;

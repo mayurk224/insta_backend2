@@ -16,6 +16,9 @@ const postSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    mediaFileId: {
+      type: String,
+    },
     mediaType: {
       type: String,
       enum: ["image", "video"],
