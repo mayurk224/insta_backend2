@@ -4,6 +4,7 @@ const postModel = require("../models/post.model");
 const userModel = require("../models/user.model");
 const { uploadToCloud } = require("../services/upload.service");
 const deleteImageKitFiles = require("../services/deleteMedia.service");
+const likeModel = require("../models/like.model");
 
 async function createPostController(req, res) {
   try {
@@ -305,10 +306,99 @@ async function deletePostController(req, res) {
   }
 }
 
+async function likePostController(req, res) {
+  try {
+    const { postId } = req.params;
+    const { userId } = req.user;
+
+    const post = await postModel
+      .findById(postId)
+      .populate("userId", "_id accountType.isPrivate")
+      .lean();
+
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    const postOwner = post.userId;
+
+    if (postOwner && postOwner.accountType && postOwner.accountType.isPrivate) {
+      const isOwner = postOwner._id.toString() === userId.toString();
+
+      if (!isOwner) {
+        const isFollower = await followModel.exists({
+          followerId: userId,
+          followingId: postOwner._id,
+          status: "accepted",
+        });
+
+        if (!isFollower) {
+          return res.status(403).json({
+            success: false,
+            message: "this account is private",
+          });
+        }
+      }
+    }
+
+    try {
+      await likeModel.create({
+        userId,
+        postId,
+      });
+
+      await postModel.updateOne(
+        { _id: postId },
+        {
+          $inc: { likesCount: 1 },
+        },
+      );
+
+      return res.status(200).json({
+        success: true,
+        liked: true,
+        message: "post liked",
+      });
+    } catch (error) {
+      if (error.code === 11000) {
+        await likeModel.deleteOne({
+          userId,
+          postId,
+        });
+
+        await postModel.updateOne(
+          { _id: postId },
+          {
+            $inc: { likesCount: -1 },
+          },
+        );
+
+        return res.status(200).json({
+          success: true,
+          liked: false,
+          message: "post unliked",
+        });
+      }
+      throw error;
+    }
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to like/unlike post",
+    });
+  }
+}
+
 module.exports = {
   createPostController,
   getMyPostsController,
   getPostController,
   editPostController,
   deletePostController,
+  likePostController,
 };
