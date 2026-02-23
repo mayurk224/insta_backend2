@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: insta-backend
+    runtime: node
+    plan: free
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    autoDeploy: true
