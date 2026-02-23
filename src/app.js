@@ -10,6 +10,10 @@ app.use(express.json());
 app.use(express.urlencoded());
 app.use(cookieParser());
 
+app.use("/", (req, res) => {
+  res.send("Welcome to Insta Backend!");
+});
+
 app.use("/api/auth", authRouter);
 
 app.use("/api/users", userRouter);
