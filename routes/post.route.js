@@ -3,6 +3,7 @@ const {
   createPostController,
   getMyPostsController,
   getPostController,
+  editPostController,
 } = require("../controllers/post.controller");
 const { identifyUser } = require("../middlewares/auth.middleware");
 const upload = require("../middlewares/upload.middleware");
@@ -19,5 +20,12 @@ postRouter.post(
 postRouter.get("/my-posts", identifyUser, getMyPostsController);
 
 postRouter.get("/:postId", identifyUser, getPostController);
+
+postRouter.patch(
+  "/:postId",
+  identifyUser,
+  upload.single("media"),
+  editPostController,
+);
 
 module.exports = postRouter;

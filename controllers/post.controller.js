@@ -133,8 +133,108 @@ async function getPostController(req, res) {
   }
 }
 
+async function editPostController(req, res) {
+  try {
+    const { postId } = req.params;
+    const { userId } = req.user;
+    const { caption } = req.body;
+    const media = req.file;
+
+    if (caption === undefined && !media) {
+      return res.status(400).json({
+        success: false,
+        message: "Nothing to update",
+      });
+    }
+
+    const update = {};
+
+    if (caption !== undefined) {
+      if (typeof caption !== "string") {
+        return res.status(400).json({
+          success: false,
+          message: "caption must be a string",
+        });
+      }
+
+      update.caption = caption.trim();
+    }
+
+    if (media) {
+      try {
+        const mediaDetails = await uploadToCloud(media);
+
+        if (!mediaDetails || !mediaDetails.url || !mediaDetails.fileType) {
+          return res.status(500).json({
+            success: false,
+            message: "Failed to upload media",
+          });
+        }
+
+        update.mediaUrl = mediaDetails.url;
+        update.mediaType = mediaDetails.fileType;
+      } catch (uploadError) {
+        console.error(uploadError);
+
+        return res.status(500).json({
+          success: false,
+          message: "Failed to upload media",
+        });
+      }
+    }
+
+    if (Object.keys(update).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Nothing to update",
+      });
+    }
+
+    const updatedPost = await postModel
+      .findOneAndUpdate(
+        { _id: postId, userId },
+        { $set: update },
+        {
+          returnDocument: "after",
+          runValidators: true,
+        },
+      )
+      .lean();
+
+    if (!updatedPost) {
+      const exists = await postModel.exists({ _id: postId });
+
+      if (!exists) {
+        return res.status(404).json({
+          success: false,
+          message: "Post not found",
+        });
+      }
+
+      return res.status(403).json({
+        success: false,
+        message: "You are not allowed to edit this post",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Post updated successfully",
+      post: updatedPost,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update post",
+    });
+  }
+}
+
 module.exports = {
   createPostController,
   getMyPostsController,
   getPostController,
+  editPostController,
 };
