@@ -200,6 +200,7 @@ async function followUserController(req, res) {
     if (existingFollow) {
       return res.status(409).json({
         success: false,
+        status: existingFollow.status,
         message:
           existingFollow.status === "pending"
             ? `Follow request already sent to @${username}.`
