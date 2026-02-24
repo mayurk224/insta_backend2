@@ -11,6 +11,7 @@ const {
   unfollowUserController,
   myFollowerController,
   myFollowingController,
+  savedPostController,
 } = require("../controllers/user.controller");
 const upload = require("../middlewares/upload.middleware");
 
@@ -42,5 +43,7 @@ userRouter.patch("/:username/unfollow", identifyUser, unfollowUserController);
 userRouter.get("/my-followers", identifyUser, myFollowerController);
 
 userRouter.get("/my-following", identifyUser, myFollowingController);
+
+userRouter.get("/me/saved", identifyUser, savedPostController);
 
 module.exports = userRouter;

@@ -1,4 +1,5 @@
 const followModel = require("../models/follow.model");
+const saveModel = require("../models/save.model");
 const userModel = require("../models/user.model");
 const { uploadToAvatar } = require("../services/upload.service");
 const bcrypt = require("bcryptjs");
@@ -451,6 +452,46 @@ async function myFollowingController(req, res) {
   }
 }
 
+async function savedPostController(req, res) {
+  try {
+    const { userId } = req.user;
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const skip = (page - 1) * limit;
+    const savedPost = await saveModel
+      .find({ userId })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate({
+        path: "postId",
+        populate: {
+          path: "userId",
+          select: "username profile.avatarUrl",
+        },
+      })
+      .lean();
+
+    const posts = savedPost.filter((s) => s.postId).map((s) => s.postId);
+
+    return res.status(200).json({
+      success: true,
+      page,
+      count: posts.length,
+      posts,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+}
+
 module.exports = {
   getMyProfileController,
   editMyProfileController,
@@ -461,4 +502,5 @@ module.exports = {
   unfollowUserController,
   myFollowerController,
   myFollowingController,
+  savedPostController,
 };
