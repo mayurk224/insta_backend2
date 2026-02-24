@@ -7,6 +7,7 @@ const {
   deletePostController,
   likePostController,
   commentPostController,
+  savePostController,
 } = require("../controllers/post.controller");
 const { identifyUser } = require("../middlewares/auth.middleware");
 const upload = require("../middlewares/upload.middleware");
@@ -36,5 +37,7 @@ postRouter.delete("/:postId", identifyUser, deletePostController);
 postRouter.patch("/:postId/like", identifyUser, likePostController);
 
 postRouter.post("/:postId/comment", identifyUser, commentPostController);
+
+postRouter.post("/:postId/save", identifyUser, savePostController);
 
 module.exports = postRouter;

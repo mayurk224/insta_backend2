@@ -6,6 +6,7 @@ const { uploadToCloud } = require("../services/upload.service");
 const deleteImageKitFiles = require("../services/deleteMedia.service");
 const likeModel = require("../models/like.model");
 const commentModel = require("../models/comment.model");
+const saveModel = require("../models/save.model");
 
 async function createPostController(req, res) {
   try {
@@ -492,6 +493,57 @@ async function commentPostController(req, res) {
   }
 }
 
+async function savePostController(req, res) {
+  try {
+    const { userId } = req.user;
+    const { postId } = req.params;
+
+    const postExist = await postModel.exists({ _id: postId });
+
+    if (!postExist) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    try {
+      await saveModel.create({
+        userId,
+        postId,
+      });
+
+      return res.status(200).json({
+        success: true,
+        saved: true,
+        message: "Post saved",
+      });
+    } catch (error) {
+      if (error.code === 11000) {
+        await saveModel.deleteOne({
+          userId,
+          saved: false,
+          postId,
+        });
+
+        return res.status(200).json({
+          success: true,
+          message: "Post unsaved",
+        });
+      }
+
+      throw error;
+    }
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
+
 module.exports = {
   createPostController,
   getMyPostsController,
@@ -500,4 +552,5 @@ module.exports = {
   deletePostController,
   likePostController,
   commentPostController,
+  savePostController,
 };
