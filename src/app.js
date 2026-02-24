@@ -6,6 +6,7 @@ const rateLimit = require("express-rate-limit");
 const authRouter = require("../routes/auth.route");
 const postRouter = require("../routes/post.route");
 const userRouter = require("../routes/user.route");
+const feedRouter = require("../routes/feed.route");
 
 const app = express();
 
@@ -42,5 +43,7 @@ app.use("/api/auth", authLimiter, authRouter);
 app.use("/api/users", userRouter);
 
 app.use("/api/posts", postRouter);
+
+app.use("/api/feed", feedRouter);
 
 module.exports = app;
