@@ -1,0 +1,111 @@
+.toast-container {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.toast {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-width: 300px;
+    max-width: 400px;
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    animation: toast-slide-in 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+    transition: all 0.3s ease;
+    font-family: inherit;
+
+    &__content {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+    }
+
+    &__icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        color: white;
+        font-size: 14px;
+        font-weight: bold;
+    }
+
+    &__message {
+        margin: 0;
+        color: #333;
+        font-size: 0.95rem;
+        font-weight: 500;
+    }
+
+    &__close-btn {
+        background: none;
+        border: none;
+        color: #999;
+        font-size: 1.5rem;
+        cursor: pointer;
+        line-height: 1;
+        padding: 0;
+        margin-left: 1rem;
+        transition: color 0.2s ease;
+
+        &:hover {
+            color: #333;
+        }
+    }
+
+    &--success {
+        border-left: 4px solid #10b981;
+
+        .toast__icon {
+            background-color: #10b981;
+        }
+    }
+
+    &--error {
+        border-left: 4px solid #ef4444;
+
+        .toast__icon {
+            background-color: #ef4444;
+        }
+    }
+
+    &--closing {
+        animation: toast-slide-out 0.3s ease forwards;
+    }
+}
+
+@keyframes toast-slide-in {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes toast-slide-out {
+    from {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+}

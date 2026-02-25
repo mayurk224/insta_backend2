@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router';
+import axios from 'axios';
+import { useToast } from '../../../context/ToastContext';
 import '../styles/auth.scss';
 
 const SignUp = () => {
@@ -8,6 +11,10 @@ const SignUp = () => {
     password: '',
   });
 
+  const [loading, setLoading] = useState(false);
+  const { showToast } = useToast();
+  const navigate = useNavigate();
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -15,10 +22,24 @@ const SignUp = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle sign-up submission
-    console.log('Form submitted', formData);
+    setLoading(true);
+
+    try {
+      const response = await axios.post('http://localhost:3000/api/auth/sign-up', formData);
+
+      showToast(response.data.message || 'Account created successfully!', 'success');
+
+      setTimeout(() => {
+        navigate('/sign-in');
+      }, 3000);
+
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || 'Signup failed. Please try again.', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -71,8 +92,8 @@ const SignUp = () => {
           />
         </div>
 
-        <button type="submit" className="auth-button">
-          Sign Up
+        <button type="submit" className="auth-button" disabled={loading}>
+          {loading ? 'Signing Up...' : 'Sign Up'}
         </button>
       </form>
 
