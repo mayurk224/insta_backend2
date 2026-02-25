@@ -3,6 +3,7 @@ import "./styles/auth.scss";
 import SignUp from "./components/SignUp";
 import SignIn from "./components/SignIn";
 import ForgotPassword from "./components/ForgotPassword";
+import ResetPassword from "./components/ResetPassword";
 
 const AuthPage = ({ type = "sign-up" }) => {
   return (
@@ -22,7 +23,7 @@ const AuthPage = ({ type = "sign-up" }) => {
               ) : type === "forgot-password" ? (
                 <ForgotPassword />
               ) : type === "reset-password" ? (
-                <div>Reset Password Form</div>
+                <ResetPassword />
               ) : null}
             </div>
           </div>
