@@ -1,14 +1,40 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router';
+import { useNavigate, Link } from 'react-router';
+import axios from 'axios';
+import { useToast } from '../../../context/ToastContext';
 
 const SignIn = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
+  const [loading, setLoading] = useState(false);
+  const { showToast } = useToast();
+  const navigate = useNavigate();
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('SignIn Form submitted', formData);
+    setLoading(true);
+
+    try {
+      const response = await axios.post('http://localhost:3000/api/auth/sign-in', {
+        identifier: formData.identifier,
+        password: formData.password
+      }, {
+        withCredentials: true
+      });
+
+      showToast(response.data.message || 'Signed in successfully!', 'success');
+
+      // Navigate to the user's feed or home page. For now, redirect to `/`
+      setTimeout(() => {
+        navigate('/');
+      }, 1500);
+
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || 'Sign in failed. Please try again.', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -20,15 +46,16 @@ const SignIn = () => {
 
       <form className="auth-form" onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="email">Email address or Username</label>
+          <label htmlFor="identifier">Email address or Username</label>
           <input
-            type="email"
-            id="email"
-            name="email"
+            type="text"
+            id="identifier"
+            name="identifier"
             placeholder="you@example.com"
-            value={formData.email}
+            value={formData.identifier}
             onChange={handleChange}
             required
+            disabled={loading}
           />
         </div>
         <div className="form-group">
@@ -41,12 +68,15 @@ const SignIn = () => {
             value={formData.password}
             onChange={handleChange}
             required
+            disabled={loading}
           />
         </div>
 
         <Link to="/forgot-password" className="forgot-password">Forgot password?</Link>
 
-        <button type="submit" className="auth-button">Log In</button>
+        <button type="submit" className="auth-button" disabled={loading}>
+          {loading ? 'Logging In...' : 'Log In'}
+        </button>
       </form>
 
       <div className="auth-links">
