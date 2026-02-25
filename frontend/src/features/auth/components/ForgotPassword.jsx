@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router';
 
 const ForgotPassword = () => {
     const [email, setEmail] = useState('');
@@ -36,7 +37,7 @@ const ForgotPassword = () => {
             </form>
 
             <div className="auth-links">
-                Remember your password? <a href="/sign-in">Log in</a>
+                Remember your password? <Link to="/sign-in">Log in</Link>
             </div>
         </>
     );

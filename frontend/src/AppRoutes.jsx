@@ -10,6 +10,7 @@ const AppRoutes = () => {
         <Route path="/sign-in" element={<AuthPage type="sign-in" />} />
         <Route path="/forgot-password" element={<AuthPage type="forgot-password" />} />
         <Route path="/reset-password" element={<AuthPage type="reset-password" />} />
+        <Route path="/verify-email" element={<AuthPage type="verify-email" />} />
       </Routes>
     </BrowserRouter>
   );

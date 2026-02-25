@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, Link } from 'react-router';
 import axios from 'axios';
 import { useToast } from '../../../context/ToastContext';
 import '../styles/auth.scss';
@@ -98,7 +98,7 @@ const SignUp = () => {
       </form>
 
       <div className="auth-links">
-        Already have an account? <a href="/sign-in">Log in</a>
+        Already have an account? <Link to="/sign-in">Log in</Link>
       </div>
     </>
   );

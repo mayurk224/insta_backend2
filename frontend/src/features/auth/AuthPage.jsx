@@ -4,6 +4,7 @@ import SignUp from "./components/SignUp";
 import SignIn from "./components/SignIn";
 import ForgotPassword from "./components/ForgotPassword";
 import ResetPassword from "./components/ResetPassword";
+import VerifyEmail from "./components/VerifyEmail";
 
 const AuthPage = ({ type = "sign-up" }) => {
   return (
@@ -24,6 +25,8 @@ const AuthPage = ({ type = "sign-up" }) => {
                 <ForgotPassword />
               ) : type === "reset-password" ? (
                 <ResetPassword />
+              ) : type === "verify-email" ? (
+                <VerifyEmail />
               ) : null}
             </div>
           </div>
