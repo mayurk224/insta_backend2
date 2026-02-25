@@ -1,12 +1,30 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router';
+import axios from 'axios';
+import { useToast } from '../../../context/ToastContext';
 
 const ForgotPassword = () => {
     const [email, setEmail] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [isSubmitted, setIsSubmitted] = useState(false);
+    const { showToast } = useToast();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Forgot Password Form submitted', { email });
+        setLoading(true);
+
+        try {
+            const response = await axios.post('http://localhost:3000/api/auth/forgot-password', {
+                identifier: email
+            });
+
+            showToast(response.data.message || 'Reset link sent successfully!', 'success');
+            setIsSubmitted(true);
+        } catch (err) {
+            showToast(err.response?.data?.message || err.message || 'Failed to send reset link.', 'error');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -31,8 +49,8 @@ const ForgotPassword = () => {
                     />
                 </div>
 
-                <button type="submit" className="auth-button">
-                    Send Reset Link
+                <button type="submit" className="auth-button" disabled={loading || isSubmitted}>
+                    {loading ? 'Sending...' : isSubmitted ? 'Link Sent' : 'Send Reset Link'}
                 </button>
             </form>
 

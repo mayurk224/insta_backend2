@@ -12,6 +12,7 @@ const SignUp = () => {
   });
 
   const [loading, setLoading] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const { showToast } = useToast();
   const navigate = useNavigate();
 
@@ -30,6 +31,7 @@ const SignUp = () => {
       const response = await axios.post('http://localhost:3000/api/auth/sign-up', formData);
 
       showToast(response.data.message || 'Account created successfully!', 'success');
+      setIsSubmitted(true);
 
       setTimeout(() => {
         navigate('/sign-in');
@@ -92,8 +94,8 @@ const SignUp = () => {
           />
         </div>
 
-        <button type="submit" className="auth-button" disabled={loading}>
-          {loading ? 'Signing Up...' : 'Sign Up'}
+        <button type="submit" className="auth-button" disabled={loading || isSubmitted}>
+          {loading ? 'Signing Up...' : isSubmitted ? 'Account Created' : 'Sign Up'}
         </button>
       </form>
 

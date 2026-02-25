@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
+import axios from 'axios';
+import { useToast } from '../../../context/ToastContext';
 
 const ResetPassword = () => {
     const [formData, setFormData] = useState({
         password: '',
         confirmPassword: ''
     });
+    const [loading, setLoading] = useState(false);
+    const [isSubmitted, setIsSubmitted] = useState(false);
+    const { showToast } = useToast();
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
     const handleChange = (e) => {
         setFormData({
@@ -14,14 +21,40 @@ const ResetPassword = () => {
         });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
+
         if (formData.password !== formData.confirmPassword) {
-            console.error("Passwords do not match");
-            // Add more sophisticated error handling like toast/alert here a later stage if needed
+            showToast("Passwords do not match", "error");
             return;
         }
-        console.log('Reset Password Form submitted', formData);
+
+        const token = searchParams.get('token');
+        if (!token) {
+            showToast("Invalid or missing reset token", "error");
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            const response = await axios.post('http://localhost:3000/api/auth/reset-password', {
+                token,
+                newPassword: formData.password
+            });
+
+            showToast(response.data.message || 'Password reset successfully!', 'success');
+            setIsSubmitted(true);
+
+            setTimeout(() => {
+                navigate('/sign-in');
+            }, 3000);
+
+        } catch (err) {
+            showToast(err.response?.data?.message || err.message || 'Failed to reset password.', 'error');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -60,8 +93,8 @@ const ResetPassword = () => {
                     />
                 </div>
 
-                <button type="submit" className="auth-button">
-                    Reset Password
+                <button type="submit" className="auth-button" disabled={loading || isSubmitted}>
+                    {loading ? 'Resetting...' : isSubmitted ? 'Password Reset' : 'Reset Password'}
                 </button>
             </form>
 
