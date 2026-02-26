@@ -27,14 +27,11 @@ export const useAuth = () => {
 
     const handleSignIn = async (userData) => {
         try {
-            setLoading(true);
             const response = await login(userData);
             setUser(response.user);
             return response;
         } catch (error) {
             throw error;
-        } finally {
-            setLoading(false);
         }
     }
 

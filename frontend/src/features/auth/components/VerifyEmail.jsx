@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router';
 import axios from 'axios';
 import { useToast } from '../../../context/ToastContext';
@@ -13,9 +13,13 @@ const VerifyEmail = () => {
     const { showToast } = useToast();
     const navigate = useNavigate();
     const { handleVerifyEmail, loading } = useAuth();
+    const hasAttempted = useRef(false);
 
     useEffect(() => {
+        if (hasAttempted.current) return;
+
         const verifyEmail = async () => {
+            hasAttempted.current = true;
             if (!token) {
                 setVerificationStatus('error');
                 setMessage('Invalid or missing verification token.');

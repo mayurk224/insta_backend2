@@ -153,7 +153,7 @@ async function resendVerifyEmailController(req, res) {
 
 async function verifyEmailController(req, res) {
   try {
-    const { token } = req.query;
+    const { token } = req.body;
 
     if (!token) {
       return res.status(400).json({
