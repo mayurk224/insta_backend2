@@ -335,6 +335,44 @@ async function forgotPasswordController(req, res) {
   }
 }
 
+async function verifyResetTokenController(req, res) {
+  try {
+    const { token } = req.query;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: "Token not found",
+      });
+    }
+
+    const hashToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const validToken = await resetPasswordModel.findOne({
+      token: hashToken,
+      expiredAt: { $gt: Date.now() },
+    });
+
+    if (!validToken) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired token",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Valid token",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server error",
+    });
+  }
+}
+
 async function resetPasswordController(req, res) {
   try {
     const { token, newPassword } = req.body;
@@ -407,6 +445,28 @@ async function resetPasswordController(req, res) {
   }
 }
 
+async function getMeController(req, res) {
+  try {
+    const user = await userModel.findById(req.user.userId).select('-password');
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    return res.status(200).json({
+      success: true,
+      user: {
+        username: user.username,
+        email: user.email,
+        bio: user.profile.bio,
+        avatarUrl: user.profile.avatarUrl,
+        fullname: user.profile.fullname,
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+}
+
 module.exports = {
   signUpController,
   resendVerifyEmailController,
@@ -414,5 +474,7 @@ module.exports = {
   signInController,
   logout,
   forgotPasswordController,
+  verifyResetTokenController,
   resetPasswordController,
+  getMeController,
 };

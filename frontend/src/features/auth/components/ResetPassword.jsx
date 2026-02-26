@@ -1,18 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
-import axios from 'axios';
 import { useToast } from '../../../context/ToastContext';
+import { useAuth } from '../hooks/useAuth';
 
 const ResetPassword = () => {
     const [formData, setFormData] = useState({
         password: '',
         confirmPassword: ''
     });
-    const [loading, setLoading] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [isValidatingToken, setIsValidatingToken] = useState(true);
+    const [tokenError, setTokenError] = useState(null);
+
     const { showToast } = useToast();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const { handleResetPassword, handleVerifyResetToken, loading } = useAuth();
+
+    useEffect(() => {
+        const token = searchParams.get('token');
+        if (!token) {
+            setTokenError("Invalid or missing reset token");
+            setIsValidatingToken(false);
+            return;
+        }
+
+        const verifyToken = async () => {
+            try {
+                await handleVerifyResetToken(token);
+                setIsValidatingToken(false);
+            } catch (err) {
+                setTokenError(err.message || 'Invalid or expired reset token.');
+                setIsValidatingToken(false);
+            }
+        };
+
+        verifyToken();
+    }, [searchParams, handleVerifyResetToken]);
 
     const handleChange = (e) => {
         setFormData({
@@ -35,15 +59,14 @@ const ResetPassword = () => {
             return;
         }
 
-        setLoading(true);
 
         try {
-            const response = await axios.post('http://localhost:3000/api/auth/reset-password', {
+            const response = await handleResetPassword({
                 token,
                 newPassword: formData.password
-            });
+            })
 
-            showToast(response.data.message || 'Password reset successfully!', 'success');
+            showToast(response.message || 'Password reset successfully!', 'success');
             setIsSubmitted(true);
 
             setTimeout(() => {
@@ -51,11 +74,30 @@ const ResetPassword = () => {
             }, 3000);
 
         } catch (err) {
-            showToast(err.response?.data?.message || err.message || 'Failed to reset password.', 'error');
-        } finally {
-            setLoading(false);
+            showToast(err.message || 'Failed to reset password.', 'error');
         }
     };
+
+    if (isValidatingToken) {
+        return (
+            <div className="auth-header">
+                <h2>Verifying Link...</h2>
+                <p>Please wait while we verify your reset link.</p>
+            </div>
+        );
+    }
+
+    if (tokenError) {
+        return (
+            <div className="auth-header">
+                <h2>Link Expired or Invalid</h2>
+                <p>{tokenError}</p>
+                <div className="auth-links" style={{ marginTop: '20px' }}>
+                    <Link to="/forgot-password">Request a new reset link</Link>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <>

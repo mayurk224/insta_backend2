@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router';
-import axios from 'axios';
+import { Link } from 'react-router';
 import { useToast } from '../../../context/ToastContext';
 import '../styles/auth.scss';
+import { useAuth } from '../hooks/useAuth';
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -11,10 +11,9 @@ const SignUp = () => {
     password: '',
   });
 
-  const [loading, setLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { showToast } = useToast();
-  const navigate = useNavigate();
+  const { loading, handleSignUp } = useAuth();
 
   const handleChange = (e) => {
     setFormData({
@@ -25,24 +24,21 @@ const SignUp = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:3000/api/auth/sign-up', formData);
+      const response = await handleSignUp(formData);
 
-      showToast(response.data.message || 'Account created successfully!', 'success');
+      showToast(response.message || 'Account created successfully!', 'success');
       setIsSubmitted(true);
 
-      setTimeout(() => {
-        navigate('/sign-in');
-      }, 3000);
-
     } catch (err) {
-      showToast(err.response?.data?.message || err.message || 'Signup failed. Please try again.', 'error');
-    } finally {
-      setLoading(false);
+      showToast(err.message || 'Signup failed. Please try again.', 'error');
     }
   };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <>

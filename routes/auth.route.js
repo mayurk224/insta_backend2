@@ -7,7 +7,10 @@ const {
   resetPasswordController,
   verifyEmailController,
   resendVerifyEmailController,
+  getMeController,
+  verifyResetTokenController,
 } = require("../controllers/auth.controller");
+const { identifyUser } = require("../middlewares/auth.middleware");
 
 const authRouter = express.Router();
 
@@ -23,6 +26,10 @@ authRouter.post("/logout", logout);
 
 authRouter.post("/forgot-password", forgotPasswordController);
 
+authRouter.get("/verify-reset-token", verifyResetTokenController);
+
 authRouter.post("/reset-password", resetPasswordController);
+
+authRouter.get("/get-me", identifyUser, getMeController);
 
 module.exports = authRouter;

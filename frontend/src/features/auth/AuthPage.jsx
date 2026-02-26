@@ -1,4 +1,6 @@
 import React from "react";
+import { Navigate } from "react-router";
+import { useAuth } from "./hooks/useAuth";
 import "./styles/auth.scss";
 import SignUp from "./components/SignUp";
 import SignIn from "./components/SignIn";
@@ -7,6 +9,20 @@ import ResetPassword from "./components/ResetPassword";
 import VerifyEmail from "./components/VerifyEmail";
 
 const AuthPage = ({ type = "sign-up" }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', width: '100vw' }}>
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (user) {
+    return <Navigate to="/" replace />;
+  }
+
   return (
     <main className="auth-page-wrapper">
       <div className="auth-container">

@@ -1,41 +1,31 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
-import axios from 'axios';
 import { useToast } from '../../../context/ToastContext';
+import { useAuth } from '../hooks/useAuth';
 
 const SignIn = () => {
-  const [formData, setFormData] = useState({ email: '', password: '' });
-  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({ identifier: '', password: '' });
   const { showToast } = useToast();
-  const navigate = useNavigate();
+  const { loading, handleSignIn } = useAuth();
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:3000/api/auth/sign-in', {
-        identifier: formData.identifier,
-        password: formData.password
-      }, {
-        withCredentials: true
-      });
+      const response = await handleSignIn(formData);
 
-      showToast(response.data.message || 'Signed in successfully!', 'success');
-
-      // Navigate to the user's feed or home page. For now, redirect to `/`
-      setTimeout(() => {
-        navigate('/');
-      }, 1500);
+      showToast(response.message || 'Signed in successfully!', 'success');
 
     } catch (err) {
       showToast(err.response?.data?.message || err.message || 'Sign in failed. Please try again.', 'error');
-    } finally {
-      setLoading(false);
     }
   };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <>
@@ -72,7 +62,9 @@ const SignIn = () => {
           />
         </div>
 
-        <Link to="/forgot-password" className="forgot-password">Forgot password?</Link>
+        <div className="forgot-password-div">
+          <Link to="/forgot-password" className="forgot-password">Forgot password?</Link>
+        </div>
 
         <button type="submit" className="auth-button" disabled={loading}>
           {loading ? 'Logging In...' : 'Log In'}

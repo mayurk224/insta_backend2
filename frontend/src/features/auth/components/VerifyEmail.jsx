@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router';
 import axios from 'axios';
 import { useToast } from '../../../context/ToastContext';
 import '../styles/auth.scss';
+import { useAuth } from '../hooks/useAuth';
 
 const VerifyEmail = () => {
     const [searchParams] = useSearchParams();
@@ -11,6 +12,7 @@ const VerifyEmail = () => {
     const [message, setMessage] = useState('Verifying your email please wait...');
     const { showToast } = useToast();
     const navigate = useNavigate();
+    const { handleVerifyEmail, loading } = useAuth();
 
     useEffect(() => {
         const verifyEmail = async () => {
@@ -22,10 +24,10 @@ const VerifyEmail = () => {
             }
 
             try {
-                const response = await axios.post(`http://localhost:3000/api/auth/verify-email?token=${token}`);
+                const response = await handleVerifyEmail({ token });
                 setVerificationStatus('success');
-                setMessage(response.data.message || 'Call verified successfully!');
-                showToast(response.data.message || 'Email verified successfully!', 'success');
+                setMessage(response.message || 'Email verified successfully!');
+                showToast(response.message || 'Email verified successfully!', 'success');
 
                 // Auto redirect to sign-in after a short delay
                 setTimeout(() => {
@@ -34,14 +36,14 @@ const VerifyEmail = () => {
 
             } catch (err) {
                 setVerificationStatus('error');
-                const errorMsg = err.response?.data?.message || err.message || 'Failed to verify email.';
+                const errorMsg = err.message || 'Failed to verify email.';
                 setMessage(errorMsg);
                 showToast(errorMsg, 'error');
             }
         };
 
         verifyEmail();
-    }, [token, navigate, showToast]);
+    }, [token, navigate, showToast, handleVerifyEmail]);
 
     return (
         <>

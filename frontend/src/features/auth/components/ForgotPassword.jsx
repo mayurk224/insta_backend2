@@ -2,26 +2,26 @@ import React, { useState } from 'react';
 import { Link } from 'react-router';
 import axios from 'axios';
 import { useToast } from '../../../context/ToastContext';
+import { useAuth } from '../hooks/useAuth';
 
 const ForgotPassword = () => {
-    const [email, setEmail] = useState('');
+    const [identifier, setIdentifier] = useState('');
     const [loading, setLoading] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const { showToast } = useToast();
+    const { handleForgotPassword } = useAuth();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true);
 
         try {
-            const response = await axios.post('http://localhost:3000/api/auth/forgot-password', {
-                identifier: email
-            });
+            setLoading(true);
+            const response = await handleForgotPassword({ identifier });
 
-            showToast(response.data.message || 'Reset link sent successfully!', 'success');
+            showToast(response?.message || 'Reset link sent successfully!', 'success');
             setIsSubmitted(true);
         } catch (err) {
-            showToast(err.response?.data?.message || err.message || 'Failed to send reset link.', 'error');
+            showToast(err?.message || 'Failed to send reset link.', 'error');
         } finally {
             setLoading(false);
         }
@@ -31,19 +31,19 @@ const ForgotPassword = () => {
         <>
             <div className="auth-header">
                 <h2>Forgot Password</h2>
-                <p>Enter your email address and we'll send you a link to reset your password.</p>
+                <p>Enter your email address or username and we'll send you a link to reset your password.</p>
             </div>
 
             <form className="auth-form" onSubmit={handleSubmit}>
                 <div className="form-group">
-                    <label htmlFor="email">Email Address</label>
+                    <label htmlFor="identifier">Email Address or Username</label>
                     <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        placeholder="you@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        type="text"
+                        id="identifier"
+                        name="identifier"
+                        placeholder="you@example.com or username"
+                        value={identifier}
+                        onChange={(e) => setIdentifier(e.target.value)}
                         required
                         aria-required="true"
                     />

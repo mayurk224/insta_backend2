@@ -1,11 +1,14 @@
 import React from "react";
 import { BrowserRouter, Route, Routes } from "react-router";
 import AuthPage from "./features/auth/AuthPage";
+import HomePage from "./features/home/HomePage";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const AppRoutes = () => {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
         <Route path="/sign-up" element={<AuthPage type="sign-up" />} />
         <Route path="/sign-in" element={<AuthPage type="sign-in" />} />
         <Route path="/forgot-password" element={<AuthPage type="forgot-password" />} />
