@@ -13,3 +13,30 @@ export async function createPost(data) {
     throw error.response?.data || error;
   }
 }
+
+export async function toggleLike(postId) {
+  try {
+    const response = await api.patch(`/${postId}/like`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+}
+
+export async function toggleSave(postId) {
+  try {
+    const response = await api.post(`/${postId}/save`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+}
+
+export async function addComment(postId, comment) {
+  try {
+    const response = await api.post(`/${postId}/comment`, { comment });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+}

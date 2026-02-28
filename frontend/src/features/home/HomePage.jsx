@@ -3,6 +3,8 @@ import NavBar from '../../components/NavBar';
 import Sidebar from '../../components/Sidebar';
 import OnlineUsers from './OnlineUsers';
 import './HomePage.scss';
+import ErrorBoundary from '../../components/ErrorBoundary';
+import Feed from '../feed/components/Feed';
 
 const HomePage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -21,10 +23,9 @@ const HomePage = () => {
       <div className="hp-shell">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <main className="hp-center" aria-label="Feed">
-          <h1 style={{ fontSize: '1.25rem', color: '#111827', marginBottom: '1rem' }}>
-            Home
-          </h1>
-          <p style={{ color: '#6b7280' }}>Your feed will appear here.</p>
+          <ErrorBoundary>
+            <Feed />
+          </ErrorBoundary>
         </main>
         <div className="hp-right">
           <OnlineUsers />

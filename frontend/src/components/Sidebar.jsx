@@ -49,7 +49,6 @@ const Sidebar = ({ isOpen, onClose }) => {
        className="sb-root"
        aria-label="Primary"
       data-open={open}
-      style={{ position: "sticky", top: 64 }}
      >
       {
          <button

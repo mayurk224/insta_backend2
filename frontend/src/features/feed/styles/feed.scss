@@ -1,0 +1,157 @@
+.feed-root {
+  display: grid;
+  gap: 1rem;
+}
+
+.feed-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.feed-error {
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.feed-empty {
+  color: #6b7280;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.feed-loading-more {
+  color: #6b7280;
+  text-align: center;
+  padding: 0.5rem;
+}
+
+.post-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.pc-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+}
+
+.pc-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  object-fit: cover;
+  background: #e5e7eb;
+}
+
+.pc-user {
+  display: grid;
+  line-height: 1.2;
+}
+.pc-username {
+  font-weight: 600;
+  color: #111827;
+}
+.pc-time {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.pc-media {
+  background: #f9fafb;
+  display: grid;
+  place-items: center;
+}
+.pc-media img,
+.pc-media video {
+  width: 100%;
+  height: auto;
+  display: block;
+  max-height: 520px;
+  object-fit: cover;
+}
+
+.pc-caption {
+  padding: 0.75rem 1rem 0.25rem 1rem;
+  color: #111827;
+}
+
+.pc-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+}
+.pc-btn {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #111827;
+  padding: 0.4rem 0.6rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.pc-btn[aria-pressed="true"] {
+  background: #1d4ed8;
+  color: #fff;
+  border-color: #1d4ed8;
+}
+
+.pc-interact {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem 1rem;
+}
+.pc-input {
+  flex: 1;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+}
+.pc-add {
+  border: 1px solid #1d4ed8;
+  background: #1d4ed8;
+  color: #fff;
+  padding: 0.5rem 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.pc-add:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.skeleton {
+  position: relative;
+}
+.skeleton-box {
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+  border-radius: 8px;
+}
+.skeleton-line {
+  height: 12px;
+  background: #e5e7eb;
+  border-radius: 6px;
+  margin: 8px 0;
+}
+.skeleton-line.short { width: 60%; }
+.skeleton-line.tiny { width: 30%; height: 10px; }
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+

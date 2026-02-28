@@ -4,7 +4,7 @@
    flex-direction: column;
    min-width: 250px;
    width: 250px;
-   height: calc(100vh - 95px);
+   height: 100%;
    background: #ffffff;
    border-right: 1px solid #e5e7eb;
    color: #0f172a;
@@ -110,6 +110,7 @@
      top: 64px;
      left: 0;
      height: calc(100vh - 64px);
+    overflow-y: auto;
      transform: translateX(-102%);
      opacity: 0;
      width: min(80vw, 320px);
@@ -132,6 +133,15 @@
  }
  
  @media (min-width: 841px) {
+  .sb-root {
+    position: sticky;
+    top: 64px;
+    align-self: start;
+    max-height: calc(100vh - 64px - 2rem);
+    max-height: calc(100dvh - 64px - 2rem);
+    overflow-y: auto;
+    min-height: 0;
+  }
    .sb-overlay {
      display: none;
    }
