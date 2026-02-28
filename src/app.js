@@ -20,10 +20,10 @@ app.use(
   }),
 );
 
-const corsOptions = {
-  origin: process.env.FRONTEND_URL,
-  credentials: true,
-};
+const allowedOrigins = [process.env.FRONTEND_URL, "http://localhost:5173"].filter(
+  Boolean,
+);
+const corsOptions = { origin: allowedOrigins, credentials: true };
 
 app.use(cors(corsOptions));
 

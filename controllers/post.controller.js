@@ -28,7 +28,7 @@ async function createPostController(req, res) {
       userId,
       caption,
       mediaUrl: mediaDetails.url,
-      mediaType: mediaDetails.fileType,
+      mediaType: media.mimetype && media.mimetype.startsWith("video/") ? "video" : "image",
       mediaFileId: mediaDetails.fileId,
     });
 
@@ -37,7 +37,7 @@ async function createPostController(req, res) {
       { $inc: { "stats.postCount": 1 } },
     );
 
-    return res.status(200).json({
+    return res.status(201).json({
       success: true,
       message: "Post Created successfully",
       post,
@@ -178,7 +178,8 @@ async function editPostController(req, res) {
         }
 
         update.mediaUrl = mediaDetails.url;
-        update.mediaType = mediaDetails.fileType;
+        update.mediaType =
+          media.mimetype && media.mimetype.startsWith("video/") ? "video" : "image";
         update.mediaFileId = mediaDetails.fileId;
       } catch (uploadError) {
         console.error(uploadError);
